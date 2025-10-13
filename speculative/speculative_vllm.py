@@ -70,7 +70,7 @@ class spe_thinking_vllm:
 
     def speculative_generate(self, messages=None, max_tokens=100, temperature=0.6, top_k=50, top_p=0.95):
         start_time = time.time()  
-        stops = self.TRIGGER_TOKENS+[self.tokenizer.eos_token ] 
+        stops = self.TRIGGER_TOKENS # +[self.tokenizer.eos_token ] 
         sampling_params_one= SamplingParams(max_tokens=1024, temperature=temperature, top_k=top_k, top_p=top_p, 
                                             skip_special_tokens=False, stop=stops)
         tgt_sampling_params_cache= SamplingParams(max_tokens=self.config['max_target_tokens'], temperature=temperature, top_k=top_k, top_p=top_p,
@@ -81,7 +81,7 @@ class spe_thinking_vllm:
         prompt_len = len(generated_ids)
         correct_tokens, try_correct_num = [], 0
         recap_after_negtive_num = self.config['recap_after_negative_num']
-        while token_num <= max_tokens:
+        while token_num < max_tokens:
             if self.config['time_out'] is not None and self.config['time_out']>0:
                 use_time = time.time() - start_time
                 if use_time > self.config['time_out']: return None

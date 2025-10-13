@@ -41,6 +41,7 @@ class spe_thinking_vllm_prompt:
         self.speculative_model = None
         if config['speculative_model_name'] is not None: 
             self.speculative_model = create_ray_model(config['speculative_model_name'], config['speculative_model_gpu'])
+            self.spe_tokenizer = AutoTokenizer.from_pretrained(config['speculative_model_name'])
         self.help_think_word = None if config['help_think_word'] is None else config['help_think_word']
         self.help_think_word_ids = None if config['help_think_word'] is None else self.tokenizer([config['help_think_word']], return_tensors="np",add_special_tokens=False)["input_ids"][0].tolist()
         self.help_recap_words = config['help_recap_words'] 
@@ -73,28 +74,29 @@ class spe_thinking_vllm_prompt:
 
     def speculative_generate(self, messages=None, max_tokens=100, temperature=0.6, top_k=50, top_p=0.95):
         start_time = time.time()  
-        stops = self.TRIGGER_TOKENS+[self.tokenizer.eos_token ] 
+        stops = self.TRIGGER_TOKENS # +[self.spe_tokenizer.eos_token ] 
         sampling_params_one= SamplingParams(max_tokens=1024, temperature=temperature, top_k=top_k, top_p=top_p, 
                                             skip_special_tokens=False, stop=stops)
         tgt_sampling_params_cache= SamplingParams(max_tokens=self.config['max_target_tokens'], temperature=temperature, top_k=top_k, top_p=top_p,
                                                   skip_special_tokens=False)
         token_num, change_tokens, change_flag, begin = 0, 0, False, self.config['begin']
         negative_sent_num, recap_token_num = 0, self.config['original_recap_token_num']
-        generated_ids_old = self.tokenizer.apply_chat_template(messages, return_tensors="np").tolist()[0]
+        generated_ids_old = self.spe_tokenizer.apply_chat_template(messages, return_tensors="np").tolist()[0]
         prompt_len = len(generated_ids_old)
-        generated_ids = self.tokenizer.apply_chat_template(messages, tokenize=False)
+        generated_ids = self.spe_tokenizer.apply_chat_template(messages, tokenize=False)
         correct_tokens, try_correct_num = [], 0
         recap_after_negtive_num = self.config['recap_after_negative_num']
-        while token_num <= max_tokens:
+        while token_num < max_tokens:
             if self.config['time_out'] is not None and self.config['time_out']>0:
                 use_time = time.time() - start_time
                 if use_time > self.config['time_out']: return None
             if not begin:
                 one_token_id, one_token = get_ray_reuslt(self.speculative_model, generated_ids, sampling_params_one)
-                if one_token_id[-1] == self.tokenizer.eos_token_id : break
-                one_token = one_token+'\n\n'
                 generated_ids =generated_ids+one_token
                 generated_ids_old.extend(one_token_id)
+                if one_token_id[-1] == self.spe_tokenizer.eos_token_id : break
+                one_token=one_token+'\n\n'
+                generated_ids = generated_ids+'\n\n'
             if begin or any(trigger in one_token for trigger in self.TRIGGER_TOKENS): 
                 if begin:
                     change_tokens = self.config['begin_token_num']
@@ -103,7 +105,6 @@ class spe_thinking_vllm_prompt:
                     tgt_kv_candidate=None
                     spe_decoded_text = ''
                 elif negative_sent_num >= recap_after_negtive_num:
-                    generated_ids.extend(self.help_recap_words_ids)
                     generated_ids =generated_ids+self.help_recap_words
                     generated_ids_old.extend(self.help_recap_words_ids)
                     change_tokens = recap_token_num
@@ -151,7 +152,7 @@ class spe_thinking_vllm_prompt:
                     generated_ids_old.extend(tgt_ids)
                     change_flag = False
             token_num = len(generated_ids_old)
-            if self.tokenizer.eos_token_id in generated_ids_old[-self.config['max_target_tokens']:]: 
+            if self.spe_tokenizer.eos_token_id in generated_ids_old[-self.config['max_target_tokens']:]: 
                 break
         generated_text = generated_ids
         return generated_text, len(generated_ids_old)-prompt_len, correct_tokens, try_correct_num
