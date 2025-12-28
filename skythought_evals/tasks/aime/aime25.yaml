@@ -4,5 +4,7 @@ dataset_split: train
 question_key: problem
 answer_key: answer
 templating_parameters:
-  template: "Return your final response within \\boxed{{}}. {prompt}" # "{prompt}\nReturn your final response within \\boxed{{}}"
+  template: "Solve the following math problem efficiently and clearly. Please reason step by step, 
+        separate logical reasoning steps with two newline characters (\n\n), and put your final answer within \\boxed{{}}.
+        Problem: {prompt}" # "{prompt}\nReturn your final response within \\boxed{{}}"
 

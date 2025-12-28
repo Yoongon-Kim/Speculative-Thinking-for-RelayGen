@@ -5,7 +5,9 @@ question_key: problem
 answer_key: answer
 dataset_split: test
 templating_parameters: 
-  template: "Please reason step by step, and put your final answer within \\boxed{{}}. {problem} <think>\n"
+  template: "Solve the following math problem efficiently and clearly. Please reason step by step, 
+        separate logical reasoning steps with two newline characters (\n\n), and put your final answer within \\boxed{{}}.
+        Problem: {problem} <think>\n"
 # optional. Not supported yet. 
 # fewshot_config:
 #   - question: ...

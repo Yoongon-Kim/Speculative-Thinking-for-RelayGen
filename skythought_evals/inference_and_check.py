@@ -98,6 +98,7 @@ def fetch_responses_ray(conversations, max_tokens, temp, args):
             "max_tokens": max_tokens,
             "temperature": temp,
             "top_p": args.top_p,
+            "top_k": args.top_k,
         },
     )
     pipeline = Pipeline(
@@ -131,13 +132,13 @@ def _parse_response_for_idx(
 def inference(llm, conversations, max_tokens, temp, args):
     if args.spe_config is not None:
         from speculative.speculative_thinking import process_message
-        r = process_message(conversations[0], llm, max_tokens, temp, top_p=args.top_p)
+        r = process_message(conversations[0], llm, max_tokens, temp, top_p=args.top_p, top_k=args.top_k)
         responses = []
         for i in tqdm(range(len(conversations))):
             con = conversations[i]
             res = []
             for _ in range(args.n):
-                r = process_message(con, llm, max_tokens, temp, top_p=args.top_p)
+                r = process_message(con, llm, max_tokens, temp, top_p=args.top_p, top_k=args.top_k)
                 if r is None: break
                 else: 
                     r['question'] = llm.get_prompt_len(con)
@@ -146,7 +147,7 @@ def inference(llm, conversations, max_tokens, temp, args):
     elif args.draft_model is not None:
         responses = []
         sampling_params = SamplingParams(
-            max_tokens=max_tokens, temperature=temp, n=args.n, top_p=args.top_p
+            max_tokens=max_tokens, temperature=temp, n=args.n, top_p=args.top_p, top_k=args.top_k
         )
         for i in tqdm(range(len(conversations))):
             con = conversations[i]
@@ -175,7 +176,7 @@ def inference(llm, conversations, max_tokens, temp, args):
         responses = [Response.from_openai_response(response) for response in responses]
     else:
         sampling_params = SamplingParams(
-            max_tokens=max_tokens, temperature=temp, n=args.n, top_p=args.top_p
+            max_tokens=max_tokens, temperature=temp, n=args.n, top_p=args.top_p, top_k=args.top_k
         )
         responses = llm.chat(
             messages=conversations, sampling_params=sampling_params, use_tqdm=True
@@ -837,6 +838,12 @@ def main():
         type=float,
         default=0.95,
         help="Sampling parameter `top_p`",
+    )
+    parser.add_argument(
+        "--top_k",
+        type=int,
+        default=20,
+        help="Sampling parameter `top_k`",
     )
     parser.add_argument(
         "--spe_config", type=str, default=None, help="Path to speculative thinking config"

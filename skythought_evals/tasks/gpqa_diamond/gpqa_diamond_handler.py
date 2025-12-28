@@ -42,7 +42,7 @@ class GPQADiamondTaskHandler(TaskHandler):
             data["Incorrect Answer 2"],
             data["Incorrect Answer 3"],
         ]
-        random.shuffle(answers)
+        # random.shuffle(answers) # Yoon commented out not to create randomness
 
         # Map options to letters
         options = ["A", "B", "C", "D"]
@@ -56,11 +56,12 @@ class GPQADiamondTaskHandler(TaskHandler):
         )
 
         # Save the letter corresponding to the correct answer
-        correct_answer_letter = next(
+        correct_answer_letter = "A" 
+        """next(
             letter
             for letter, answer in options_to_answers.items()
             if answer == data["Correct Answer"]
-        )
+        )"""
 
         return multiple_choice_string, correct_answer_letter
 

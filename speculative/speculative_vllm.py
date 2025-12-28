@@ -14,8 +14,13 @@ def create_ray_model(model_name, target_model_gpu, dtype='bfloat16'):
     @ray.remote(num_gpus=target_model_gpu)
     class ModelWorkerSingleGPU:
         def __init__(self, model_name: str):
-            self.model = LLM(model=model_name, tensor_parallel_size=target_model_gpu, dtype=dtype,
-                             enable_prefix_caching=True)
+            self.model = LLM(
+                model=model_name,
+                tensor_parallel_size=target_model_gpu,
+                dtype=dtype,
+                model_impl="transformers",
+                trust_remote_code=True,   # 허브 모델이 커스텀 코드면 필요
+            )
         def generate(self, generated_ids, sampling_params):
             outputs = self.model.generate(
                 prompt_token_ids=generated_ids, 
