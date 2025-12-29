@@ -8,3 +8,4 @@ pydantic
 setuptools
 ray==2.43.0
 hf_transfer
+pynvml
