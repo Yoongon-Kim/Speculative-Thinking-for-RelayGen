@@ -733,7 +733,7 @@ def main():
     parser.add_argument(
         "--model",
         type=str,
-        default='deepseek-ai/DeepSeek-R1-Distill-Qwen-32B',
+        default='Qwen/Qwen3-32B',
         help="The model to run.",
     )
     parser.add_argument("--tp", type=int, default=2, help="Tensor Parallelism Degree")
@@ -882,11 +882,19 @@ def main():
     handler_cls = TASK_HANDLER_MAP[handler_name]
     handler = handler_cls(task_config)
 
-    model_config = ModelConfig.from_model_id(args.model, args.system_prompt_template)
+    # When using spe_config, extract the target model name from the config file
+    if args.spe_config is not None:
+        from utils.data_utils import read_yml
+        spe_config = read_yml(args.spe_config)
+        model_id_for_config = spe_config.get('target_model_name', args.model)
+    else:
+        model_id_for_config = args.model
 
-    temperatures = [1] if args.model.startswith("openai/o1") else args.temperatures
+    model_config = ModelConfig.from_model_id(model_id_for_config, args.system_prompt_template)
 
-    if args.top_p < 1 and args.model.startswith("openai/o1"):
+    temperatures = [1] if model_id_for_config.startswith("openai/o1") else args.temperatures
+
+    if args.top_p < 1 and model_id_for_config.startswith("openai/o1"):
         print(
             "OpenAI o1 models do not support `top_p` sampling. Resetting `top_p` to 1"
         )

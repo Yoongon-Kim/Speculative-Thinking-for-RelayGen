@@ -10,17 +10,29 @@ from vllm import LLM, SamplingParams
 import ray
 import time
 
-def create_ray_model(model_name, target_model_gpu, dtype='bfloat16'):
+def create_ray_model(model_name, target_model_gpu, dtype='bfloat16', is_spec_model=False):
     @ray.remote(num_gpus=target_model_gpu)
     class ModelWorkerSingleGPU:
-        def __init__(self, model_name: str):
-            self.model = LLM(
-                model=model_name,
-                tensor_parallel_size=target_model_gpu,
-                dtype=dtype,
-                model_impl="transformers",
-                trust_remote_code=True,   # 허브 모델이 커스텀 코드면 필요
-            )
+        def __init__(self, model_name: str, is_spec_model_: bool):
+            if is_spec_model_:
+                self.model = LLM(
+                    model=model_name,
+                    tensor_parallel_size=target_model_gpu,
+                    dtype=dtype,
+                    gpu_memory_utilization=0.2,
+                    trust_remote_code=True,
+                    max_model_len=32768,
+                )
+            else:
+                self.model = LLM(
+                    model=model_name,
+                    tensor_parallel_size=target_model_gpu,
+                    dtype=dtype,
+                    gpu_memory_utilization=0.8,
+                    max_model_len=32768,
+                    trust_remote_code=True,
+                    enforce_eager=True,
+                )
         def generate(self, generated_ids, sampling_params):
             outputs = self.model.generate(
                 prompt_token_ids=generated_ids, 
@@ -29,7 +41,7 @@ def create_ray_model(model_name, target_model_gpu, dtype='bfloat16'):
             )
             one_token_id = list(outputs[0].outputs[0].token_ids)
             return one_token_id
-    return ModelWorkerSingleGPU.remote(model_name)
+    return ModelWorkerSingleGPU.remote(model_name, is_spec_model)
 
 def get_ray_reuslt(model, generated_ids, sampling_params):
     result_a_future = model.generate.remote(generated_ids, sampling_params)
@@ -41,10 +53,10 @@ class spe_thinking_vllm:
         self.tokenizer = AutoTokenizer.from_pretrained(config['target_model_name'])
         if self.tokenizer.pad_token_id is None:
             self.tokenizer.pad_token_id = self.tokenizer.eos_token_id 
-        self.target_model = create_ray_model(config['target_model_name'], config['target_model_gpu'])
+        self.target_model = create_ray_model(config['target_model_name'], config['target_model_gpu'], is_spec_model=False)
         self.speculative_model = None
         if config['speculative_model_name'] is not None: 
-            self.speculative_model = create_ray_model(config['speculative_model_name'], config['speculative_model_gpu'])
+            self.speculative_model = create_ray_model(config['speculative_model_name'], config['speculative_model_gpu'], is_spec_model=True)
         self.help_think_word_ids = None if config['help_think_word'] is None else self.tokenizer([config['help_think_word']], return_tensors="np",add_special_tokens=False)["input_ids"][0].tolist()
         self.help_recap_words_ids = self.tokenizer([config['help_recap_words']], return_tensors="np",add_special_tokens=False)["input_ids"][0].tolist()
         self.TRIGGER_TOKENS = config['TRIGGER_TOKENS']
@@ -60,11 +72,11 @@ class spe_thinking_vllm:
             return self.speculative_generate( messages, max_tokens, temperature, top_k, top_p)
 
     def get_prompt_len(self,messages ):
-        generated_ids = self.tokenizer.apply_chat_template(messages, return_tensors="np").tolist()[0]
+        generated_ids = self.tokenizer.apply_chat_template(messages, return_tensors="np", add_generation_prompt=True, enable_thinking=True).tolist()[0]
         return  len(generated_ids)
 
     def normal_generate(self, messages=None, max_tokens=1024, temperature=0.6, top_k=50, top_p=0.95):
-        generated_ids = self.tokenizer.apply_chat_template(messages, return_tensors="np").tolist()[0]
+        generated_ids = self.tokenizer.apply_chat_template(messages, return_tensors="np", add_generation_prompt=True, enable_thinking=True).tolist()[0]
         prompt_len = len(generated_ids)
         sampling_params = SamplingParams(max_tokens=max_tokens, temperature=temperature, top_k=top_k, top_p=top_p, 
                                             skip_special_tokens=False)
@@ -82,7 +94,7 @@ class spe_thinking_vllm:
                                                   skip_special_tokens=False)
         token_num, change_tokens, change_flag, begin = 0, 0, False, self.config['begin']
         negative_sent_num, recap_token_num = 0, self.config['original_recap_token_num']
-        generated_ids = self.tokenizer.apply_chat_template(messages, return_tensors="np").tolist()[0]
+        generated_ids = self.tokenizer.apply_chat_template(messages, return_tensors="np", add_generation_prompt=True, enable_thinking=True).tolist()[0]
         prompt_len = len(generated_ids)
         correct_tokens, try_correct_num = [], 0
         recap_after_negtive_num = self.config['recap_after_negative_num']

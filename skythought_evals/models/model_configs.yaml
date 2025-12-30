@@ -66,6 +66,12 @@ models:
 
   Qwen/Qwen2.5-Math-72B-Instruct:
     system_prompt: *qwen_cot_system_prompt
+  
+  Qwen/Qwen3-1.7B:
+    system_prompt: *qwen_cot_system_prompt
+
+  Qwen/Qwen3-32B:
+    system_prompt: *qwen_cot_system_prompt
 
   PRIME-RL/Eurus-2-7B-PRIME:
     system_prompt: *prime_rl_system_prompt

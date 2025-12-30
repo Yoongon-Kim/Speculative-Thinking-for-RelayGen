@@ -12,7 +12,7 @@ def parse_arguments():
     parser = argparse.ArgumentParser(
         description="Process model path, prompt format, and evals to run."
     )
-    parser.add_argument("--model", type=str, default='deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B' ,help="Path to the model.")
+    parser.add_argument("--model", type=str, default='Qwen/Qwen3-1.7B' ,help="Path to the model.")
     parser.add_argument(
         "--evals",
         default='math500,aime24,gpqa_diamond',
