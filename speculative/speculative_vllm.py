@@ -78,7 +78,10 @@ class spe_thinking_vllm:
     def normal_generate(self, messages=None, max_tokens=1024, temperature=0.6, top_k=50, top_p=0.95):
         generated_ids = self.tokenizer.apply_chat_template(messages, return_tensors="np", add_generation_prompt=True, enable_thinking=True).tolist()[0]
         prompt_len = len(generated_ids)
-        sampling_params = SamplingParams(max_tokens=max_tokens, temperature=temperature, top_k=top_k, top_p=top_p, 
+        # Ensure we don't exceed the model's max context length
+        max_model_len = 32768
+        adjusted_max_tokens = min(max_tokens, max_model_len - prompt_len - 1024)  # Leave 1024 token buffer
+        sampling_params = SamplingParams(max_tokens=adjusted_max_tokens, temperature=temperature, top_k=top_k, top_p=top_p,
                                             skip_special_tokens=False)
         spe_ids = get_ray_reuslt(self.target_model, generated_ids, sampling_params)
         generated_text = self.tokenizer.decode(spe_ids, skip_special_tokens=True)
@@ -86,9 +89,9 @@ class spe_thinking_vllm:
         return generated_text, num_tokens, correct_tokens, try_correct_num
 
     def speculative_generate(self, messages=None, max_tokens=100, temperature=0.6, top_k=50, top_p=0.95):
-        start_time = time.time()  
-        stops = self.TRIGGER_TOKENS # +[self.tokenizer.eos_token ] 
-        sampling_params_one= SamplingParams(max_tokens=1024, temperature=temperature, top_k=top_k, top_p=top_p, 
+        start_time = time.time()
+        stops = self.TRIGGER_TOKENS # +[self.tokenizer.eos_token ]
+        sampling_params_one= SamplingParams(max_tokens=1024, temperature=temperature, top_k=top_k, top_p=top_p,
                                             skip_special_tokens=False, stop=stops)
         tgt_sampling_params_cache= SamplingParams(max_tokens=self.config['max_target_tokens'], temperature=temperature, top_k=top_k, top_p=top_p,
                                                   skip_special_tokens=False)
@@ -98,7 +101,10 @@ class spe_thinking_vllm:
         prompt_len = len(generated_ids)
         correct_tokens, try_correct_num = [], 0
         recap_after_negtive_num = self.config['recap_after_negative_num']
-        while token_num < max_tokens:
+        # Ensure we don't exceed the model's max context length (32768)
+        max_model_len = 32768
+        max_generation_tokens = min(max_tokens, max_model_len - prompt_len - 1024)  # Leave 1024 token buffer
+        while token_num < max_generation_tokens:
             if self.config['time_out'] is not None and self.config['time_out']>0:
                 use_time = time.time() - start_time
                 if use_time > self.config['time_out']: return None
