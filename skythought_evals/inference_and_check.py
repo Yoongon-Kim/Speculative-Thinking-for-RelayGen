@@ -733,7 +733,7 @@ def main():
     parser.add_argument(
         "--model",
         type=str,
-        default='Qwen/Qwen3-32B',
+        default='deepseek-ai/DeepSeek-R1-Distill-Qwen-32B',
         help="The model to run.",
     )
     parser.add_argument("--tp", type=int, default=2, help="Tensor Parallelism Degree")
