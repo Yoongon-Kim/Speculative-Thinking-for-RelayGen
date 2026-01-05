@@ -1,8 +1,14 @@
-import __init__
 import os
+import sys
 import numpy as np
 import random
 import torch
+
+# Add parent directory to path if not already there
+parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if parent_dir not in sys.path:
+    sys.path.insert(0, parent_dir)
+
 from utils.setting import *
 
 if project_dir is not None:

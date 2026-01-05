@@ -1,14 +1,21 @@
-import __init__
-from speculative.spe_utils import *
+import os
+import sys
 import torch
 import torch.nn.functional as F
 from transformers import AutoModelForCausalLM, AutoTokenizer, Qwen2ForCausalLM
+import ray
+import time
+
+# Add parent directory to path if not already there
+parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if parent_dir not in sys.path:
+    sys.path.insert(0, parent_dir)
+
+from speculative.spe_utils import *
 from utils.data_utils import read_yml
 from utils.utils import *
 from utils.qwen_math_parser import *
 from vllm import LLM, SamplingParams
-import ray
-import time
 
 def create_ray_model(model_name, target_model_gpu, dtype='bfloat16', is_spec_model=False):
     @ray.remote(num_gpus=target_model_gpu)
@@ -19,7 +26,7 @@ def create_ray_model(model_name, target_model_gpu, dtype='bfloat16', is_spec_mod
                     model=model_name,
                     tensor_parallel_size=target_model_gpu,
                     dtype=dtype,
-                    gpu_memory_utilization=0.2,
+                    gpu_memory_utilization=0.15,
                     trust_remote_code=True,
                     max_model_len=32768,
                 )
@@ -28,7 +35,7 @@ def create_ray_model(model_name, target_model_gpu, dtype='bfloat16', is_spec_mod
                     model=model_name,
                     tensor_parallel_size=target_model_gpu,
                     dtype=dtype,
-                    gpu_memory_utilization=0.9,
+                    gpu_memory_utilization=0.8,
                     max_model_len=32768,
                     trust_remote_code=True,
                     enforce_eager=True,
