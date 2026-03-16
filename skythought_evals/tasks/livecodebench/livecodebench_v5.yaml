@@ -8,5 +8,5 @@ templating_parameters:
   stdin_template: "{prompt}"
   non_stdin_template: "{prompt}"
 preprocess_config:
-  jsonl_path: "/home/yoongonkim/QwQ/eval/data/livecodebench_v5.jsonl"
-  tests_dir: "/home/yoongonkim/Speculative-Thinking-for-RelayGen/skythought_evals/tasks/livecodebench/livecodebench_v5_tests"
+  jsonl_path: "/workspace/Speculative-Thinking-for-RelayGen/skythought_evals/tasks/livecodebench/livecodebench_v5.jsonl"
+  tests_dir: "/workspace/Speculative-Thinking-for-RelayGen/skythought_evals/tasks/livecodebench/livecodebench_v5_tests"

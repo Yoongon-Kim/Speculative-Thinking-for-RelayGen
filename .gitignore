@@ -12,3 +12,4 @@ eval_all_results
 explore/
 speculative/test
 yoon_eval
+skythought_evals/tasks/livecodebench/livecodebench_v5_tests/
