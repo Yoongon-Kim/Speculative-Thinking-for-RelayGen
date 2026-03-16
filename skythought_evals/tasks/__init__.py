@@ -8,6 +8,7 @@ from .base import TaskConfig, TaskHandler
 from .gpqa_diamond.gpqa_diamond_handler import GPQADiamondTaskHandler
 from .gsm8k.gsm8k_handler import GSM8KTaskHandler
 from .livecodebench.livecodebench_handler import LiveCodeBenchTaskHandler
+from .livecodebench.livecodebench_v5_handler import LiveCodeBenchV5TaskHandler
 from .math.math_handler import MathTaskHandler
 from .minervamath.minervamath_handler import MinervaMathTaskHandler
 from .mmlu.mmlu_handler import MMLUProTaskHandler, MMLUTaskHandler
@@ -26,6 +27,7 @@ TASK_HANDLER_MAP = {
     "mmlu": MMLUTaskHandler,
     "mmlu_pro": MMLUProTaskHandler,
     "livecodebench": LiveCodeBenchTaskHandler,
+    "livecodebench_v5": LiveCodeBenchV5TaskHandler,
     "gsm8k": GSM8KTaskHandler,
     "arc_c": ARCChallengeTaskHandler,
     "amc23": AMC23TaskHandler,
@@ -45,6 +47,7 @@ __all__ = [
     "MMLUTaskHandler",
     "MMLUProTaskHandler",
     "LiveCodeBenchTaskHandler",
+    "LiveCodeBenchV5TaskHandler",
     "GSM8KTaskHandler",
     "ARCChallengeTaskHandler",
     "TaskHandler",

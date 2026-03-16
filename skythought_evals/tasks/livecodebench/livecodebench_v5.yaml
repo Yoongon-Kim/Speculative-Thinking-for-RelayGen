@@ -1,0 +1,12 @@
+handler: livecodebench_v5
+dataset_path: "unused"
+dataset_subset: null
+dataset_split: test
+question_key: task_id
+answer_key: null
+templating_parameters:
+  stdin_template: "{prompt}"
+  non_stdin_template: "{prompt}"
+preprocess_config:
+  jsonl_path: "/home/yoongonkim/QwQ/eval/data/livecodebench_v5.jsonl"
+  tests_dir: "/home/yoongonkim/Speculative-Thinking-for-RelayGen/skythought_evals/tasks/livecodebench/livecodebench_v5_tests"
